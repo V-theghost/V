@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Contact V</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyA5jW8PoYYTIj1UwzrN26RXHZFrGZJ4Lps",
+            authDomain: "vghost-cd096.firebaseapp.com",
+            projectId: "vghost-cd096",
+            storageBucket: "vghost-cd096.firebasestorage.app",
+            messagingSenderId: "846344230810",
+            appId: "1:846344230810:web:f1783f706040b002a74c23",
+            databaseURL: "https://vghost-cd096-default-rtdb.firebaseio.com/" // Add this line
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        function createChat() {
+            try {
+                // Generate random chat ID
+                const chatId = 'chat_' + Math.random().toString(36).substring(2, 15);
+                
+                // Store chat ID locally
+                localStorage.setItem('v_chat_id', chatId);
+                
+                // Create chat in RTDB with initial message
+                const chatRef = database.ref('chats/' + chatId);
+                const messagesRef = chatRef.child('messages');
+                
+                const initialMessage = {
+                    sender: 'system',
+                    text: 'Secure channel established. V will respond shortly.',
+                    timestamp: Date.now()
+                };
+                
+                // Push initial message and update chat info
+                messagesRef.push(initialMessage);
+                chatRef.update({
+                    createdAt: Date.now(),
+                    status: 'active',
+                    lastActivity: Date.now()
+                });
+
+                // Redirect to messenger
+                window.location.href = `messages.html?chatId=${chatId}`;
+
+            } catch (error) {
+                console.error("Error creating chat:", error);
+                document.body.innerHTML = "<h1>Error creating chat. Please try again.</h1>";
+            }
+        }
+
+        window.onload = createChat;
+    </script>
+</head>
+<body>
+    <p>Initializing secure connection to V...</p>
+</body>
+</html>
