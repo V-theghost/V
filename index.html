@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Contact V</title>
+    <style>
+        body {
+            background-color: #0d0d0d;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            flex-direction: column;
+        }
+        .container {
+            text-align: center;
+            z-index: 10;
+        }
+        /* Glitch effect for the header */
+        .glitch {
+            font-size: 5rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            position: relative;
+            text-shadow: 0.05em 0 0 #00ff00, -0.05em -0.025em 0 #0000ff;
+            animation: glitch 5s infinite;
+            margin-bottom: 2rem;
+        }
+        .glitch span {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .glitch span:first-child {
+            animation: glitch 650ms infinite;
+            clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+            transform: translate(-0.025em, -0.0125em);
+            opacity: 0.75;
+        }
+        .glitch span:last-child {
+            animation: glitch 375ms infinite;
+            clip-path: polygon(0 80%, 100% 20%, 100% 100%, 0 100%);
+            transform: translate(0.0125em, 0.025em);
+            opacity: 0.75;
+        }
+        @keyframes glitch {
+            0% { text-shadow: 0.05em 0 0 #00ff00, -0.05em -0.025em 0 #0000ff; }
+          14% { text-shadow: 0.05em 0 0 #00ff00, -0.05em -0.025em 0 #0000ff; }
+          15% { text-shadow: -0.05em -0.025em 0 #00ff00, 0.025em 0.025em 0 #0000ff; }
+          49% { text-shadow: -0.05em -0.025em 0 #00ff00, 0.025em 0.025em 0 #0000ff; }
+          50% { text-shadow: 0.025em 0.05em 0 #00ff00, 0.05em 0 0 #0000ff; }
+          99% { text-shadow: 0.025em 0.05em 0 #00ff00, 0.05em 0 0 #0000ff; }
+          100% { text-shadow: 0.05em 0 0 #00ff00, -0.05em -0.025em 0 #0000ff; }
+        }
+        /* Typewriter effect for the intro text */
+        .typewriter {
+            overflow: hidden;
+            border-right: .15em solid #00ff00;
+            white-space: nowrap;
+            margin: 0 auto;
+            letter-spacing: .05em;
+            animation: typing 3.5s steps(40, end), blink-caret .75s step-end infinite;
+            max-width: 100%;
+            margin-bottom: 3rem;
+            font-size: 1.2rem;
+        }
+        @keyframes typing {
+            from { width: 0 }
+            to { width: 100% }
+        }
+        @keyframes blink-caret {
+            from, to { border-color: transparent }
+            50% { border-color: #00ff00; }
+        }
+        /* Button Styles */
+        .button {
+            background-color: transparent;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .button:hover {
+            background-color: #00ff00;
+            color: #0d0d0d;
+        }
+        #status {
+            margin-top: 20px;
+            font-style: italic;
+            color: #888;
+        }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyA5jW8PoYYTIj1UwzrN26RXHZFrGZJ4Lps",
+            authDomain: "vghost-cd096.firebaseapp.com",
+            projectId: "vghost-cd096",
+            storageBucket: "vghost-cd096.firebasestorage.app",
+            messagingSenderId: "846344230810",
+            appId: "1:846344230810:web:f1783f706040b002a74c23",
+            databaseURL: "https://vghost-cd096-default-rtdb.firebaseio.com/"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // CHECK FOR EXISTING CHAT ON PAGE LOAD
+        function checkForExistingChat() {
+            const existingChatId = localStorage.getItem('v_chat_id');
+            const statusEl = document.getElementById('status');
+
+            if (existingChatId) {
+                // Chat ID exists! Redirect to the existing chat.
+                statusEl.textContent = "Existing session found. Redirecting...";
+                window.location.href = `messages.html?chatId=${existingChatId}`;
+            } else {
+                // No chat ID found. Show the button to create one.
+                statusEl.textContent = "No active session found. Press the button to establish a connection.";
+                // Show the button that was hidden by default
+                document.getElementById('initiate-button').style.display = 'inline-block';
+            }
+        }
+
+        async function createChat() {
+            const button = document.getElementById('initiate-button');
+            const status = document.getElementById('status');
+
+            try {
+                button.disabled = true;
+                status.textContent = "Initializing secure channel...";
+
+                // Generate random chat ID
+                const chatId = 'chat_' + Math.random().toString(36).substring(2, 15);
+                
+                // Store chat ID locally
+                localStorage.setItem('v_chat_id', chatId);
+                
+                // Create chat in RTDB with initial message
+                const chatRef = database.ref('chats/' + chatId);
+                const messagesRef = chatRef.child('messages');
+                
+                const initialMessage = {
+                    sender: 'system',
+                    text: 'Secure channel established. V will respond shortly.',
+                    timestamp: Date.now()
+                };
+                
+                // Push initial message and update chat info
+                await messagesRef.push(initialMessage);
+                await chatRef.update({
+                    createdAt: Date.now(),
+                    status: 'active',
+                    lastActivity: Date.now()
+                });
+
+                status.textContent = "Connection established. Redirecting...";
+                // Redirect to messenger
+                window.location.href = `messages.html?chatId=${chatId}`;
+
+            } catch (error) {
+                console.error("Error creating chat:", error);
+                status.textContent = "Error establishing connection. Please try again.";
+                status.style.color = "#ff4444";
+                button.disabled = false;
+            }
+        }
+
+        // Run the check when the page loads
+        window.onload = checkForExistingChat;
+        // Attach the function to the button click
+        window.initiateChat = createChat;
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1 class="glitch">V<span>V</span><span>V</span></h1>
+        <p class="typewriter">Session Handler</p>
+        <!-- Button is hidden by default. Will be shown if no session exists. -->
+        <button id="initiate-button" onclick="initiateChat()" class="button" style="display: none;">Initiate Secure Session</button>
+        <p id="status">Checking for existing session...</p>
+    </div>
+</body>
+</html>
